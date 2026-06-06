@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>比賽模擬 – 野球小聯盟</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Oswald:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy:   #0a1628;
+  --blue:   #1a3a6b;
+  --red:    #c0392b;
+  --gold:   #e8a020;
+  --green:  #27ae60;
+  --light:  #f5f7fa;
+  --gray:   #8a9bb0;
+  --border: #dde3ec;
+  --white:  #ffffff;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--white); font-family:'Noto Sans TC',sans-serif; color:var(--navy); }
+
+/* Header */
+header {
+  background:var(--navy); color:var(--white);
+  padding:0 32px; height:60px;
+  display:flex; align-items:center; justify-content:space-between;
+  border-bottom:3px solid var(--gold);
+  position:sticky; top:0; z-index:100;
+}
+.logo { display:flex; align-items:center; gap:10px; text-decoration:none; color:var(--white); }
+.logo-text { font-family:'Oswald',sans-serif; font-size:18px; font-weight:700; }
+.header-tag { font-size:11px; color:rgba(255,255,255,0.5); letter-spacing:2px; }
+
+/* 比賽頭部 */
+.game-head {
+  background:var(--navy);
+  padding:28px 32px 24px;
+  color:var(--white);
+}
+.game-head-inner {
+  max-width:900px; margin:0 auto;
+  display:flex; align-items:center; justify-content:space-between;
+  gap:20px;
+}
+.team-block { flex:1; text-align:center; }
+.team-block .team-name {
+  font-family:'Oswald',sans-serif; font-size:24px; font-weight:700;
+  margin-bottom:4px;
+}
+.team-block .team-user { font-size:12px; color:rgba(255,255,255,0.5); }
+.team-block .team-record { font-size:11px; color:rgba(255,255,255,0.4); margin-top:4px; }
+
+.score-center { text-align:center; flex-shrink:0; }
+.scores {
+  display:flex; align-items:center; gap:16px;
+  justify-content:center;
+}
+.score-big {
+  font-family:'Oswald',sans-serif; font-size:56px; font-weight:700;
+  line-height:1; min-width:60px; text-align:center;
+  transition:color 0.3s;
+}
+.score-big.leading { color:var(--gold); }
+.score-sep { font-size:28px; color:rgba(255,255,255,0.3); }
+.inning-info {
+  font-size:12px; color:rgba(255,255,255,0.5);
+  margin-top:8px; letter-spacing:1px;
+}
+
+/* 狀態列 */
+.status-bar {
+  background:var(--blue); padding:10px 32px;
+  display:flex; align-items:center; justify-content:center; gap:24px;
+}
+.status-bar-inner {
+  max-width:900px; width:100%;
+  display:flex; align-items:center; justify-content:space-between; gap:16px;
+  flex-wrap:wrap;
+}
+.out-indicator { display:flex; gap:6px; align-items:center; }
+.out-dot {
+  width:14px; height:14px; border-radius:50%;
+  border:2px solid rgba(255,255,255,0.3);
+  background:transparent; transition:background 0.2s;
+}
+.out-dot.on { background:var(--gold); border-color:var(--gold); }
+.base-diagram { position:relative; width:52px; height:52px; flex-shrink:0; }
+.base {
+  position:absolute; width:14px; height:14px;
+  border:2px solid rgba(255,255,255,0.3);
+  transform:rotate(45deg); background:transparent;
+  transition:background 0.2s, border-color 0.2s;
+}
+.base.on { background:var(--gold); border-color:var(--gold); }
+.base-1b { right:0; top:50%; transform:translateY(-50%) rotate(45deg); }
+.base-2b { top:0; left:50%; transform:translateX(-50%) rotate(45deg); }
+.base-3b { left:0; top:50%; transform:translateY(-50%) rotate(45deg); }
+.status-text { color:rgba(255,255,255,0.7); font-size:12px; letter-spacing:1px; }
+.status-text strong { color:var(--white); }
+.live-badge {
+  background:var(--red); color:var(--white);
+  padding:3px 10px; border-radius:20px;
+  font-size:11px; font-weight:700;
+  animation:pulse 1.5s infinite;
+}
+.end-badge {
+  background:var(--gray); color:var(--white);
+  padding:3px 10px; border-radius:20px;
+  font-size:11px; font-weight:700;
+}
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.5} }
+
+/* 比分板 */
+.scoreboard-wrap {
+  max-width:900px; margin:24px auto; padding:0 24px;
+  overflow-x:auto;
+}
+.scoreboard {
+  width:100%; border-collapse:collapse; font-size:12px;
+  border:1px solid var(--border); border-radius:8px; overflow:hidden;
+}
+.scoreboard th {
+  background:var(--navy); color:var(--white);
+  padding:8px 10px; text-align:center;
+  font-size:11px; font-weight:600;
+}
+.scoreboard th:first-child { text-align:left; padding-left:14px; }
+.scoreboard td {
+  padding:7px 10px; text-align:center;
+  border-bottom:1px solid var(--border);
+}
+.scoreboard td:first-child { text-align:left; padding-left:14px; font-weight:600; }
+.scoreboard td.total { background:var(--light); font-weight:700; }
+.scoreboard td.cur-inning { background:#fff8e1; }
+.scoreboard td.score-cell { font-family:'Oswald',sans-serif; font-size:14px; }
+
+/* 主內容區 */
+.main-area {
+  max-width:900px; margin:0 auto; padding:0 24px 60px;
+  display:grid; grid-template-columns:1fr 300px; gap:24px;
+}
+
+/* 逐局記錄 */
+.inning-log { }
+.section-title {
+  font-family:'Oswald',sans-serif; font-size:14px; font-weight:700;
+  letter-spacing:2px; color:var(--navy);
+  border-left:4px solid var(--red); padding-left:10px;
+  margin-bottom:14px; margin-top:24px;
+}
+
+.inning-block {
+  border:1px solid var(--border); border-radius:8px;
+  overflow:hidden; margin-bottom:12px;
+  animation:fadeIn 0.4s ease;
+}
+@keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+.inning-block-head {
+  padding:8px 14px;
+  display:flex; align-items:center; justify-content:space-between;
+  font-size:12px; font-weight:700;
+}
+.inning-block-head.top    { background:#e8f4fd; color:#1a5276; }
+.inning-block-head.bottom { background:#fef9e7; color:#7d6608; }
+.inning-block-head .inning-score {
+  font-family:'Oswald',sans-serif; font-size:16px; font-weight:700;
+}
+
+.at-bat-table { width:100%; border-collapse:collapse; font-size:12px; }
+.at-bat-table td { padding:6px 12px; border-bottom:1px solid var(--border); }
+.at-bat-table tr:last-child td { border-bottom:none; }
+.at-bat-table td.ab-num { width:28px; color:var(--gray); font-size:11px; text-align:center; }
+.at-bat-table td.ab-name { font-weight:600; width:80px; }
+.at-bat-table td.ab-result { }
+.at-bat-table td.ab-runner { color:var(--gray); font-size:11px; }
+.at-bat-table td.ab-out { color:var(--gray); font-size:11px; text-align:right; }
+
+.result-hit     { color:var(--green); font-weight:700; }
+.result-hr      { color:var(--red); font-weight:700; }
+.result-walk    { color:var(--blue); font-weight:600; }
+.result-out     { color:var(--gray); }
+.result-so      { color:#999; }
+.result-dp      { color:#c0392b; }
+.result-run     { background:var(--gold); color:var(--navy); padding:1px 6px; border-radius:4px; font-size:10px; font-weight:700; margin-left:4px; }
+
+/* 側欄 */
+.sidebar { }
+.game-log-box {
+  border:1px solid var(--border); border-radius:8px; overflow:hidden;
+  margin-bottom:16px;
+}
+.game-log-head {
+  background:var(--navy); color:var(--white);
+  padding:10px 14px; font-size:12px; font-weight:700; letter-spacing:1px;
+}
+.game-log-body {
+  max-height:320px; overflow-y:auto; padding:8px 0;
+}
+.log-item {
+  padding:6px 14px; font-size:11px; color:var(--navy);
+  border-bottom:1px solid var(--border); line-height:1.5;
+  animation:fadeIn 0.3s ease;
+}
+.log-item:last-child { border-bottom:none; }
+.log-item .log-tag {
+  display:inline-block; padding:1px 6px; border-radius:3px;
+  font-size:10px; font-weight:700; margin-right:4px;
+}
+.log-tag-hit  { background:#d5f5e3; color:#1e8449; }
+.log-tag-hr   { background:#fadbd8; color:#c0392b; }
+.log-tag-out  { background:#f2f3f4; color:#7f8c8d; }
+.log-tag-run  { background:#fef9e7; color:#b7950b; }
+.log-tag-inn  { background:var(--navy); color:var(--white); }
+
+/* 打線資訊 */
+.lineup-box {
+  border:1px solid var(--border); border-radius:8px; overflow:hidden;
+}
+.lineup-tabs {
+  display:flex; border-bottom:1px solid var(--border);
+}
+.lineup-tab {
+  flex:1; padding:9px; text-align:center;
+  font-size:12px; font-weight:600; cursor:pointer;
+  background:var(--light); color:var(--gray); border:none;
+  font-family:'Noto Sans TC',sans-serif;
+  transition:all 0.2s;
+}
+.lineup-tab.active { background:var(--white); color:var(--navy); border-bottom:2px solid var(--red); }
+.lineup-body { padding:0; }
+.lineup-player {
+  display:flex; align-items:center; gap:8px;
+  padding:7px 12px; border-bottom:1px solid var(--border);
+  font-size:11px;
+}
+.lineup-player:last-child { border-bottom:none; }
+.lineup-num { width:18px; color:var(--gray); font-weight:700; text-align:right; }
+.lineup-pos {
+  width:24px; height:20px; border-radius:3px;
+  background:var(--navy); color:var(--white);
+  display:flex; align-items:center; justify-content:center;
+  font-size:10px; font-weight:700; flex-shrink:0;
+}
+.lineup-pos.pitcher { background:var(--red); }
+.lineup-name { flex:1; font-weight:600; }
+.lineup-stat { color:var(--gray); font-size:10px; }
+
+/* 控制區 */
+.control-area {
+  max-width:900px; margin:0 auto; padding:0 24px 20px;
+  display:flex; gap:12px; flex-wrap:wrap;
+}
+.btn {
+  padding:10px 24px; border-radius:7px; font-size:13px;
+  font-weight:700; cursor:pointer; border:none;
+  font-family:'Noto Sans TC',sans-serif; transition:all 0.2s;
+}
+.btn-start {
+  background:var(--red); color:var(--white);
+}
+.btn-start:hover { background:#a93226; transform:translateY(-1px); }
+.btn-start:disabled { background:var(--border); color:var(--gray); cursor:not-allowed; transform:none; }
+.btn-step {
+  background:var(--navy); color:var(--white);
+}
+.btn-step:hover:not(:disabled) { background:var(--blue); }
+.btn-step:disabled { background:var(--border); color:var(--gray); cursor:not-allowed; }
+.btn-outline {
+  background:transparent; border:1.5px solid var(--border); color:var(--gray);
+}
+.btn-outline:hover { border-color:var(--navy); color:var(--navy); }
+
+.speed-group { display:flex; align-items:center; gap:8px; margin-left:auto; }
+.speed-label { font-size:12px; color:var(--gray); }
+.speed-select {
+  border:1.5px solid var(--border); border-radius:6px;
+  padding:6px 10px; font-size:12px;
+  font-family:'Noto Sans TC',sans-serif; color:var(--navy);
+}
+
+@media(max-width:700px){
+  .main-area { grid-template-columns:1fr; }
+  .game-head-inner { flex-direction:column; gap:12px; }
+  .score-big { font-size:40px; }
+  header { padding:0 16px; }
+  .scoreboard-wrap { padding:0 12px; }
+  .main-area { padding:0 12px 40px; }
+  .control-area { padding:0 12px 16px; }
+}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const SUPABASE_URL = 'https://egogdgiketzguhgqkhzi.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_bSDDNDzQbtRECc12rq4H1A_TEY_f2Ti';
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+</script>
+</head>
+<body>
+
+<header>
+  <a href="baseball-leaguea.html" class="logo">
+    <span style="font-size:20px;">⚾</span>
+    <span class="logo-text">野球小聯盟</span>
+  </a>
+  <div class="header-tag">比賽模擬</div>
+</header>
+
+<!-- 比賽頭部 -->
+<div class="game-head">
+  <div class="game-head-inner">
+    <div class="team-block">
+      <div class="team-name" id="homeTeamName">主場球隊</div>
+      <div class="team-user" id="homeTeamUser">玩家A</div>
+      <div class="team-record" id="homeRecord">0勝 0敗</div>
+    </div>
+    <div class="score-center">
+      <div class="scores">
+        <div class="score-big" id="homeScore">0</div>
+        <div class="score-sep">–</div>
+        <div class="score-big" id="awayScore">0</div>
+      </div>
+      <div class="inning-info" id="inningInfo">比賽尚未開始</div>
+    </div>
+    <div class="team-block">
+      <div class="team-name" id="awayTeamName">客場球隊</div>
+      <div class="team-user" id="awayTeamUser">玩家B</div>
+      <div class="team-record" id="awayRecord">0勝 0敗</div>
+    </div>
+  </div>
+</div>
+
+<!-- 狀態列 -->
+<div class="status-bar">
+  <div class="status-bar-inner">
+    <div class="status-text">
+      <strong id="statusText">等待比賽開始</strong>
+    </div>
+    <div style="display:flex;align-items:center;gap:16px;">
+      <!-- 壘包 -->
+      <div class="base-diagram">
+        <div class="base base-2b" id="base2"></div>
+        <div class="base base-1b" id="base1"></div>
+        <div class="base base-3b" id="base3"></div>
+      </div>
+      <!-- 出局數 -->
+      <div class="out-indicator">
+        <span style="font-size:11px;color:rgba(255,255,255,0.5);">OUT</span>
+        <div class="out-dot" id="out1"></div>
+        <div class="out-dot" id="out2"></div>
+      </div>
+      <div class="live-badge" id="liveBadge" style="display:none;">LIVE</div>
+      <div class="end-badge" id="endBadge" style="display:none;">終局</div>
+    </div>
+  </div>
+</div>
+
+<!-- 控制按鈕 -->
+<div class="control-area">
+  <button class="btn btn-start" id="btnStart" onclick="startGame()">▶ 開始比賽</button>
+  <button class="btn btn-step" id="btnStep" onclick="stepInning()" disabled>下一局 →</button>
+  <button class="btn btn-outline" onclick="resetGame()">重新開始</button>
+  <div class="speed-group">
+    <span class="speed-label">速度</span>
+    <select class="speed-select" id="speedSelect">
+      <option value="800">慢速</option>
+      <option value="400" selected>普通</option>
+      <option value="100">快速</option>
+      <option value="0">即時</option>
+    </select>
+  </div>
+</div>
+
+<!-- 比分板 -->
+<div class="scoreboard-wrap">
+  <table class="scoreboard" id="scoreboardTable">
+    <thead>
+      <tr id="sbHead">
+        <th>球隊</th>
+        <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th>
+        <th>6</th><th>7</th><th>8</th><th>9</th>
+        <th class="total">R</th><th class="total">H</th><th class="total">E</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr id="sbHome">
+        <td id="sbHomeName">主場</td>
+        <td id="h0">-</td><td id="h1">-</td><td id="h2">-</td>
+        <td id="h3">-</td><td id="h4">-</td><td id="h5">-</td>
+        <td id="h6">-</td><td id="h7">-</td><td id="h8">-</td>
+        <td class="total score-cell" id="hR">0</td>
+        <td class="total" id="hH">0</td>
+        <td class="total" id="hE">0</td>
+      </tr>
+      <tr id="sbAway">
+        <td id="sbAwayName">客場</td>
+        <td id="a0">-</td><td id="a1">-</td><td id="a2">-</td>
+        <td id="a3">-</td><td id="a4">-</td><td id="a5">-</td>
+        <td id="a6">-</td><td id="a7">-</td><td id="a8">-</td>
+        <td class="total score-cell" id="aR">0</td>
+        <td class="total" id="aH">0</td>
+        <td class="total" id="aE">0</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- 主內容 -->
+<div class="main-area">
+  <!-- 逐局記錄 -->
+  <div class="inning-log">
+    <div class="section-title">逐局比賽記錄</div>
+    <div id="inningBlocks"></div>
+  </div>
+
+  <!-- 側欄 -->
+  <div class="sidebar">
+    <!-- 即時比賽日誌 -->
+    <div class="section-title" style="margin-top:24px;">比賽日誌</div>
+    <div class="game-log-box">
+      <div class="game-log-head">📋 即時日誌</div>
+      <div class="game-log-body" id="gameLog">
+        <div class="log-item" style="color:var(--gray);">等待比賽開始...</div>
+      </div>
+    </div>
+
+    <!-- 打線 -->
+    <div class="section-title">打線資訊</div>
+    <div class="lineup-box">
+      <div class="lineup-tabs">
+        <button class="lineup-tab active" onclick="switchLineup('home')">主場</button>
+        <button class="lineup-tab" onclick="switchLineup('away')">客場</button>
+      </div>
+      <div class="lineup-body" id="lineupBody"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════
+//  球隊資料（示範用，之後從localStorage讀取）
+// ══════════════════════════════
+const DEMO_HOME = {
+  name: '火龍隊', user: 'PlayerA',
+  wins: 5, losses: 3,
+  fielders: [
+    {name:'花子', pos:'中外', hand:0, stats:[6,7,8,4], special:'腳程好'},
+    {name:'菊吉', pos:'遊擊', hand:1, stats:[5,6,5,7], special:'-'},
+    {name:'梅子', pos:'右外', hand:0, stats:[5,8,5,5], special:'強打型打者'},
+    {name:'伊藤', pos:'一壘', hand:0, stats:[5,9,4,5], special:'強打型打者'},
+    {name:'竹子', pos:'三壘', hand:2, stats:[5,6,6,6], special:'-'},
+    {name:'上田', pos:'左外', hand:1, stats:[6,5,6,5], special:'-'},
+    {name:'小富', pos:'二壘', hand:0, stats:[5,5,7,5], special:'腳程好'},
+    {name:'鈴実', pos:'捕手', hand:0, stats:[6,5,4,7], special:'-'},
+    {name:'山田', pos:'投手', hand:0, stats:[5,5,5,5], special:'-'},
+  ],
+  pitchers: [
+    {name:'大谷', hand:0, stats:[8,7,5,5], special:'三振王'},
+    {name:'佐藤', hand:1, stats:[5,7,6,5], special:'-'},
+  ]
+};
+
+const DEMO_AWAY = {
+  name: '飛鷹隊', user: 'PlayerB',
+  wins: 4, losses: 4,
+  fielders: [
+    {name:'イチロー', pos:'中外', hand:1, stats:[5,7,9,4], special:'腳程好'},
+    {name:'松岡',     pos:'一壘', hand:1, stats:[6,8,4,5], special:'強打型打者'},
+    {name:'龍',       pos:'右外', hand:1, stats:[5,6,5,6], special:'-'},
+    {name:'山本',     pos:'三壘', hand:0, stats:[5,7,5,6], special:'-'},
+    {name:'十津川',   pos:'二壘', hand:1, stats:[5,6,6,5], special:'-'},
+    {name:'四川',     pos:'左外', hand:0, stats:[5,5,6,6], special:'-'},
+    {name:'龍龍',     pos:'遊擊', hand:1, stats:[6,7,4,6], special:'-'},
+    {name:'大河原',   pos:'捕手', hand:0, stats:[5,5,4,8], special:'-'},
+    {name:'達比修',   pos:'投手', hand:1, stats:[5,5,5,5], special:'-'},
+  ],
+  pitchers: [
+    {name:'達比修', hand:1, stats:[7,8,5,5], special:'穩定型'},
+    {name:'上原',   hand:0, stats:[5,6,7,5], special:'-'},
+  ]
+};
+
+const POSITIONS_ABBR = {'捕手':'捕','一壘':'一','二壘':'二','三壘':'三','遊擊':'游','左外':'左','中外':'中','右外':'右','投手':'投'};
+
+// ══════════════════════════════
+//  比賽狀態
+// ══════════════════════════════
+let gameState = null;
+let animQueue = [];
+let isAnimating = false;
+let currentLineupSide = 'home';
+
+function initGame() {
+  // 嘗試從localStorage讀取玩家球隊
+  const savedTeam = JSON.parse(localStorage.getItem('bbTeam') || 'null');
+  const home = savedTeam ? convertSavedTeam(savedTeam, '我的球隊') : DEMO_HOME;
+  const away = DEMO_AWAY;
+
+  gameState = {
+    home, away,
+    homeScore: 0, awayScore: 0,
+    homeHits: 0, awayHits: 0,
+    homeErrors: 0, awayErrors: 0,
+    innings: Array(9).fill(null).map(() => ({home:null, away:null})),
+    currentInning: 0,
+    currentHalf: 'away', // away先攻（上半）
+    outs: 0,
+    bases: [false, false, false], // 1B,2B,3B
+    homeBatOrder: 0, awayBatOrder: 0,
+    gameover: false,
+    allEvents: []
+  };
+
+  updateDisplay();
+  renderLineup('home');
+  document.getElementById('liveBadge').style.display = 'none';
+  document.getElementById('endBadge').style.display = 'none';
+  document.getElementById('btnStart').disabled = false;
+  document.getElementById('btnStep').disabled = true;
+  document.getElementById('inningBlocks').innerHTML = '';
+  document.getElementById('gameLog').innerHTML =
+    '<div class="log-item" style="color:var(--gray);">等待比賽開始...</div>';
+}
+
+function convertSavedTeam(data, defaultName) {
+  return {
+    name: data.teamName || defaultName,
+    user: (JSON.parse(localStorage.getItem('bbUser') || '{}')).username || '玩家',
+    wins: 0, losses: 0,
+    fielders: (data.fielders || []).map((f, i) => ({
+      name: f.name,
+      pos: ['捕手','一壘','二壘','三壘','遊擊','左外','中外','右外'][parseInt(f.pos)] || '外野',
+      hand: parseInt(f.hand),
+      stats: f.stats,
+      special: f.special || '-'
+    })),
+    pitchers: (data.pitchers || []).map(p => ({
+      name: p.name, hand: parseInt(p.hand),
+      stats: p.stats, special: p.special || '-'
+    }))
+  };
+}
+
+// ══════════════════════════════
+//  比賽模擬核心
+// ══════════════════════════════
+function simulateAtBat(batter, pitcher) {
+  // 基本機率計算
+  const batPow  = batter.stats[1];  // 打力
+  const batSpd  = batter.stats[2];  // 走力
+  const pitSpd  = pitcher.stats[0]; // 球速
+  const pitCtrl = pitcher.stats[1]; // 控球
+
+  const hitBase  = (batPow / 10) * 0.35;
+  const hrBase   = (batPow / 10) * 0.08;
+  const walkBase = Math.max(0, (5 - pitCtrl) / 10) * 0.12;
+  const soBase   = (pitSpd / 10) * 0.22;
+
+  // 特殊能力加成
+  let hitMod = 1, hrMod = 1, walkMod = 1;
+  if (batter.special === '強打型打者') hrMod = 1.6;
+  if (batter.special === '平均型打者') hitMod = 1.3;
+  if (batter.special === '選球強')     walkMod = 1.8;
+  if (pitcher.special === '三振王')    soBase *= 1.5;
+  if (pitcher.special === '穩定型')    walkBase *= 0.5;
+
+  const roll = Math.random();
+  let cumul = 0;
+
+  cumul += hrBase * hrMod;
+  if (roll < cumul) {
+    const rbi = 1 + [false,...gameState.bases].filter(Boolean).length;
+    return { type:'hr', text:`⚾ 全壘打！`, rbi, hits:1 };
+  }
+  cumul += hitBase * hitMod * 0.4;
+  if (roll < cumul) {
+    return { type:'2b', text:`二壘安打`, rbi:0, hits:1 };
+  }
+  cumul += hitBase * hitMod * 0.6;
+  if (roll < cumul) {
+    return { type:'1b', text:`安打`, rbi:0, hits:1 };
+  }
+  cumul += walkBase * walkMod;
+  if (roll < cumul) {
+    return { type:'walk', text:`四球`, rbi:0, hits:0 };
+  }
+  cumul += soBase;
+  if (roll < cumul) {
+    return { type:'so', text:`三振`, rbi:0, hits:0 };
+  }
+  const outTypes = ['滾地球出局','飛球出局','內飛球','二壘滾地球'];
+  return { type:'out', text:outTypes[Math.floor(Math.random()*outTypes.length)], rbi:0, hits:0 };
+}
+
+function applyAtBatResult(result, isHome) {
+  const bases = gameState.bases;
+  let runs = 0;
+
+  if (result.type === 'hr') {
+    runs = 1 + bases.filter(Boolean).length;
+    gameState.bases = [false, false, false];
+  } else if (result.type === '2b') {
+    if (bases[2]) runs++;
+    if (bases[1]) runs++;
+    gameState.bases = [false, true, false];
+    if (bases[0]) gameState.bases[2] = true;
+  } else if (result.type === '1b') {
+    if (bases[2]) runs++;
+    gameState.bases = [true, bases[0], bases[1]];
+  } else if (result.type === 'walk') {
+    if (bases[0] && bases[1] && bases[2]) runs++;
+    gameState.bases = [true,
+      bases[0] ? true : false,
+      (bases[0] && bases[1]) ? true : bases[1]];
+  } else {
+    gameState.outs++;
+  }
+
+  return runs;
+}
+
+function simulateHalfInning(team, isHome) {
+  const batters  = team.fielders;
+  const pitcher  = isHome ? gameState.away.pitchers[0] : gameState.home.pitchers[0];
+  const batOrder = isHome ? gameState.homeBatOrder : gameState.awayBatOrder;
+
+  gameState.outs  = 0;
+  gameState.bases = [false, false, false];
+
+  const events = [];
+  let runs = 0, hits = 0;
+  let order = batOrder;
+
+  while (gameState.outs < 3) {
+    const batter = batters[order % 9];
+    const result = simulateAtBat(batter, pitcher);
+    const runScored = applyAtBatResult(result, isHome);
+    runs  += runScored;
+    hits  += result.hits;
+
+    const basesStr = buildBasesStr();
+    events.push({
+      batter: batter.name,
+      result: result,
+      runs: runScored,
+      outs: gameState.outs,
+      bases: basesStr,
+      order: (order % 9) + 1
+    });
+    order++;
+  }
+
+  if (isHome) gameState.homeBatOrder = order % 9;
+  else gameState.awayBatOrder = order % 9;
+
+  return { runs, hits, events };
+}
+
+function buildBasesStr() {
+  const b = gameState.bases;
+  const parts = [];
+  if (b[0]) parts.push('一壘有人');
+  if (b[1]) parts.push('二壘有人');
+  if (b[2]) parts.push('三壘有人');
+  if (parts.length === 3) return '滿壘';
+  return parts.length > 0 ? parts.join('、') : '';
+}
+
+// ══════════════════════════════
+//  逐局執行
+// ══════════════════════════════
+async function startGame() {
+  document.getElementById('btnStart').disabled = true;
+  document.getElementById('liveBadge').style.display = 'inline-block';
+  document.getElementById('gameLog').innerHTML = '';
+  addLog('inn', '比賽開始！');
+
+  const speed = parseInt(document.getElementById('speedSelect').value);
+
+  for (let inn = 0; inn < 9; inn++) {
+    gameState.currentInning = inn;
+
+    // 上半（客隊攻）
+    gameState.currentHalf = 'away';
+    updateInningInfo(inn, '上半');
+    addLog('inn', `第 ${inn+1} 局 上半`);
+    const awayHalf = simulateHalfInning(gameState.away, false);
+    gameState.awayScore += awayHalf.runs;
+    gameState.awayHits  += awayHalf.hits;
+    gameState.innings[inn].away = awayHalf.runs;
+    renderInningBlock(inn, 'away', awayHalf);
+    updateScoreboard(inn, 'away', awayHalf.runs);
+    for (const ev of awayHalf.events) {
+      logEvent(ev, gameState.away.name);
+      if (speed > 0) await sleep(speed);
+    }
+    updateScores();
+    if (speed > 0) await sleep(speed * 0.5);
+
+    // 下半（主隊攻）
+    gameState.currentHalf = 'home';
+    updateInningInfo(inn, '下半');
+    addLog('inn', `第 ${inn+1} 局 下半`);
+    const homeHalf = simulateHalfInning(gameState.home, true);
+    gameState.homeScore += homeHalf.runs;
+    gameState.homeHits  += homeHalf.hits;
+    gameState.innings[inn].home = homeHalf.runs;
+    renderInningBlock(inn, 'home', homeHalf);
+    updateScoreboard(inn, 'home', homeHalf.runs);
+    for (const ev of homeHalf.events) {
+      logEvent(ev, gameState.home.name);
+      if (speed > 0) await sleep(speed);
+    }
+    updateScores();
+    if (speed > 0) await sleep(speed * 0.5);
+  }
+
+  // 比賽結束
+  gameState.gameover = true;
+  document.getElementById('liveBadge').style.display = 'none';
+  document.getElementById('endBadge').style.display = 'inline-block';
+  document.getElementById('statusText').textContent = '比賽結束';
+  updateInningInfo(8, '終局');
+
+  const winner = gameState.homeScore > gameState.awayScore
+    ? gameState.home.name : gameState.awayScore > gameState.homeScore
+    ? gameState.away.name : '平局';
+  addLog('inn', `比賽結束！${winner === '平局' ? '平局' : winner + ' 獲勝！'}`);
+
+  // 儲存比賽結果到Supabase
+  try {
+    const teamData = JSON.parse(localStorage.getItem('bbTeam') || 'null');
+    if (teamData && teamData.id) {
+      await sb.from('games').insert({
+        home_team_id: teamData.id,
+        score_home: gameState.homeScore,
+        score_away: gameState.awayScore,
+        innings_data: gameState.innings
+      });
+      addLog('inn', '✅ 比賽結果已儲存！');
+    }
+  } catch(e) {
+    console.log('儲存比賽結果失敗：', e);
+  }
+
+  // 更新leading color
+  updateScores();
+}
+
+function sleep(ms) {
+  return new Promise(r => setTimeout(r, ms));
+}
+
+// ══════════════════════════════
+//  畫面更新
+// ══════════════════════════════
+function updateDisplay() {
+  const g = gameState;
+  document.getElementById('homeTeamName').textContent = g.home.name;
+  document.getElementById('awayTeamName').textContent = g.away.name;
+  document.getElementById('homeTeamUser').textContent = g.home.user;
+  document.getElementById('awayTeamUser').textContent = g.away.user;
+  document.getElementById('homeRecord').textContent = `${g.home.wins}勝 ${g.home.losses}敗`;
+  document.getElementById('awayRecord').textContent = `${g.away.wins}勝 ${g.away.losses}敗`;
+  document.getElementById('sbHomeName').textContent = g.home.name;
+  document.getElementById('sbAwayName').textContent = g.away.name;
+  updateScores();
+}
+
+function updateScores() {
+  const g = gameState;
+  const hEl = document.getElementById('homeScore');
+  const aEl = document.getElementById('awayScore');
+  hEl.textContent = g.homeScore;
+  aEl.textContent = g.awayScore;
+  hEl.className = 'score-big' + (g.homeScore > g.awayScore ? ' leading' : '');
+  aEl.className = 'score-big' + (g.awayScore > g.homeScore ? ' leading' : '');
+  document.getElementById('hR').textContent = g.homeScore;
+  document.getElementById('hH').textContent = g.homeHits;
+  document.getElementById('aR').textContent = g.awayScore;
+  document.getElementById('aH').textContent = g.awayHits;
+}
+
+function updateInningInfo(inn, half) {
+  document.getElementById('inningInfo').textContent =
+    `第 ${inn+1} 局 ${half}`;
+  document.getElementById('statusText').textContent =
+    `第 ${inn+1} 局 ${half} 攻 ── ${gameState.outs} 人出局`;
+}
+
+function updateScoreboard(inn, side, runs) {
+  const id = (side === 'home' ? 'h' : 'a') + inn;
+  const el = document.getElementById(id);
+  if (el) {
+    el.textContent = runs;
+    el.className = 'score-cell' + (runs > 0 ? ' result-hit' : '');
+  }
+}
+
+function renderInningBlock(inn, half, halfData) {
+  const container = document.getElementById('inningBlocks');
+  const isHome = half === 'home';
+  const teamName = isHome ? gameState.home.name : gameState.away.name;
+  const halvLabel = isHome ? '下半' : '上半';
+  const headClass = isHome ? 'bottom' : 'top';
+
+  let rows = '';
+  halfData.events.forEach(ev => {
+    const r = ev.result;
+    let cls = 'result-out';
+    if (r.type === 'hr')   cls = 'result-hr';
+    else if (r.type === '1b' || r.type === '2b') cls = 'result-hit';
+    else if (r.type === 'walk') cls = 'result-walk';
+    else if (r.type === 'so')   cls = 'result-so';
+    const runTag = ev.runs > 0 ?
+      `<span class="result-run">${ev.runs > 1 ? ev.runs + '分' : '得分'}</span>` : '';
+    const outsLabel = `${ev.outs}出`;
+    rows += `<tr>
+      <td class="ab-num">${ev.order}</td>
+      <td class="ab-name">${ev.batter}</td>
+      <td class="ab-result"><span class="${cls}">${r.text}</span>${runTag}</td>
+      <td class="ab-runner">${ev.bases || ''}</td>
+      <td class="ab-out">${outsLabel}</td>
+    </tr>`;
+  });
+
+  const block = document.createElement('div');
+  block.className = 'inning-block';
+  block.id = `iblock-${inn}-${half}`;
+  block.innerHTML = `
+    <div class="inning-block-head ${headClass}">
+      <span>第 ${inn+1} 局 ${halvLabel} ── ${teamName}</span>
+      <span class="inning-score">${halfData.runs} 分</span>
+    </div>
+    <table class="at-bat-table">
+      <tbody>${rows}</tbody>
+    </table>`;
+  container.appendChild(block);
+  block.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+// ══════════════════════════════
+//  日誌
+// ══════════════════════════════
+function addLog(type, msg) {
+  const box = document.getElementById('gameLog');
+  const tagMap = { inn:'log-tag-inn', hit:'log-tag-hit', hr:'log-tag-hr', out:'log-tag-out', run:'log-tag-run' };
+  const labelMap = { inn:'局', hit:'安打', hr:'HR', out:'出局', run:'得分' };
+  const div = document.createElement('div');
+  div.className = 'log-item';
+  div.innerHTML = `<span class="log-tag ${tagMap[type]||'log-tag-out'}">${labelMap[type]||type}</span>${msg}`;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+function logEvent(ev, teamName) {
+  const r = ev.result;
+  if (r.type === 'hr')   addLog('hr',  `${teamName} ${ev.batter} 全壘打！${ev.runs}分得分`);
+  else if (r.type === '1b') addLog('hit', `${teamName} ${ev.batter} 安打`);
+  else if (r.type === '2b') addLog('hit', `${teamName} ${ev.batter} 二壘安打`);
+  else if (r.type === 'walk') addLog('out', `${teamName} ${ev.batter} 四球`);
+  else if (ev.runs > 0)  addLog('run', `${teamName} ${ev.batter} ${ev.runs}分得分`);
+  else addLog('out', `${teamName} ${ev.batter} ${r.text}`);
+}
+
+// ══════════════════════════════
+//  打線顯示
+// ══════════════════════════════
+function renderLineup(side) {
+  currentLineupSide = side;
+  const team = side === 'home' ? gameState.home : gameState.away;
+  const box = document.getElementById('lineupBody');
+  let html = '';
+  team.fielders.forEach((f, i) => {
+    const abbr = POSITIONS_ABBR[f.pos] || f.pos;
+    html += `<div class="lineup-player">
+      <span class="lineup-num">${i+1}</span>
+      <span class="lineup-pos">${abbr}</span>
+      <span class="lineup-name">${f.name}</span>
+      <span class="lineup-stat">${['右打','左打','切換'][f.hand]||''} / 打${f.stats[1]}</span>
+    </div>`;
+  });
+  team.pitchers.forEach((p, i) => {
+    html += `<div class="lineup-player">
+      <span class="lineup-num">P${i+1}</span>
+      <span class="lineup-pos pitcher">投</span>
+      <span class="lineup-name">${p.name}</span>
+      <span class="lineup-stat">${['右投','左投'][p.hand]||''} / 球${p.stats[0]}</span>
+    </div>`;
+  });
+  box.innerHTML = html;
+}
+
+function switchLineup(side) {
+  document.querySelectorAll('.lineup-tab').forEach((t,i) => {
+    t.classList.toggle('active', (side === 'home' && i===0) || (side === 'away' && i===1));
+  });
+  renderLineup(side);
+}
+
+// ══════════════════════════════
+//  重置
+// ══════════════════════════════
+function resetGame() {
+  initGame();
+}
+
+function stepInning() { /* 保留擴充 */ }
+
+// 啟動
+initGame();
+</script>
+</body>
+</html>
