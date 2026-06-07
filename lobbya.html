@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>對戰大廳 – 野球小聯盟</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Oswald:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const SUPABASE_URL = 'https://egogdgiketzguhgqkhzi.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_bSDDNDzQbtRECc12rq4H1A_TEY_f2Ti';
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+</script>
+<style>
+:root {
+  --navy:#0a1628; --blue:#1a3a6b; --red:#c0392b;
+  --gold:#e8a020; --green:#27ae60; --light:#f5f7fa;
+  --gray:#8a9bb0; --border:#dde3ec; --white:#ffffff;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--white);font-family:'Noto Sans TC',sans-serif;color:var(--navy);min-height:100vh;}
+
+header{
+  background:var(--navy);color:var(--white);
+  padding:0 24px;height:60px;
+  display:flex;align-items:center;justify-content:space-between;
+  border-bottom:3px solid var(--gold);
+  position:sticky;top:0;z-index:100;
+}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--white);}
+.logo-text{font-family:'Oswald',sans-serif;font-size:18px;font-weight:700;}
+.user-info{font-size:12px;color:rgba(255,255,255,0.6);}
+.user-info span{color:var(--gold);font-weight:700;}
+
+.container{max-width:800px;margin:0 auto;padding:32px 20px;}
+
+/* 狀態卡片 */
+.status-card{
+  background:var(--light);border:1px solid var(--border);
+  border-radius:12px;padding:24px;margin-bottom:24px;
+  display:flex;align-items:center;gap:16px;
+}
+.status-icon{font-size:36px;}
+.status-text h3{font-size:16px;font-weight:700;margin-bottom:4px;}
+.status-text p{font-size:13px;color:var(--gray);}
+
+/* 大按鈕 */
+.match-btn{
+  width:100%;padding:20px;border-radius:12px;
+  font-size:18px;font-weight:700;cursor:pointer;border:none;
+  font-family:'Noto Sans TC',sans-serif;
+  transition:all 0.2s;margin-bottom:16px;
+  display:flex;align-items:center;justify-content:center;gap:12px;
+}
+.match-btn-find{background:var(--red);color:var(--white);}
+.match-btn-find:hover{background:#a93226;transform:translateY(-2px);box-shadow:0 8px 24px rgba(192,57,43,0.3);}
+.match-btn-find:disabled{background:var(--border);color:var(--gray);cursor:not-allowed;transform:none;box-shadow:none;}
+.match-btn-cancel{background:var(--light);color:var(--navy);border:2px solid var(--border);}
+.match-btn-cancel:hover{border-color:var(--navy);}
+
+/* 等待動畫 */
+.waiting{
+  text-align:center;padding:40px 20px;
+  display:none;
+}
+.waiting.show{display:block;}
+.spinner{
+  width:60px;height:60px;border:4px solid var(--border);
+  border-top-color:var(--red);border-radius:50%;
+  animation:spin 1s linear infinite;
+  margin:0 auto 20px;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.waiting h3{font-size:18px;font-weight:700;margin-bottom:8px;}
+.waiting p{font-size:13px;color:var(--gray);}
+.wait-time{
+  font-family:'Oswald',sans-serif;font-size:32px;
+  font-weight:700;color:var(--red);margin-top:12px;
+}
+
+/* 對戰室列表 */
+.section-title{
+  font-family:'Oswald',sans-serif;font-size:14px;
+  font-weight:700;letter-spacing:2px;color:var(--navy);
+  border-left:4px solid var(--red);padding-left:10px;
+  margin-bottom:14px;
+}
+
+.room-list{border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+.room-head{
+  background:var(--navy);color:var(--white);
+  padding:10px 16px;font-size:12px;font-weight:600;
+  display:flex;justify-content:space-between;
+}
+.room-item{
+  padding:14px 16px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:13px;transition:background 0.15s;
+}
+.room-item:last-child{border-bottom:none;}
+.room-item:hover{background:var(--light);}
+.room-teams{font-weight:600;}
+.room-status{
+  padding:4px 12px;border-radius:20px;
+  font-size:11px;font-weight:700;
+}
+.status-waiting{background:#fff8e1;color:#b7950b;}
+.status-playing{background:#fdecea;color:var(--red);}
+.status-done{background:#eafaf1;color:var(--green);}
+.btn-join{
+  padding:6px 16px;border-radius:6px;
+  background:var(--navy);color:var(--white);
+  border:none;font-size:12px;font-weight:600;
+  cursor:pointer;font-family:'Noto Sans TC',sans-serif;
+}
+.btn-join:hover{background:var(--blue);}
+.no-rooms{
+  padding:32px;text-align:center;
+  color:var(--gray);font-size:13px;
+}
+
+/* 我的球隊卡片 */
+.my-team-card{
+  border:1px solid var(--border);border-radius:10px;
+  padding:20px;margin-bottom:24px;
+  display:flex;align-items:center;gap:16px;
+}
+.team-badge{
+  width:52px;height:52px;background:var(--navy);
+  border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:24px;flex-shrink:0;
+}
+.team-detail h3{font-size:16px;font-weight:700;margin-bottom:4px;}
+.team-detail p{font-size:12px;color:var(--gray);}
+.team-stats{margin-left:auto;text-align:right;}
+.team-stats .record{font-family:'Oswald',sans-serif;font-size:18px;font-weight:700;}
+.team-stats .label{font-size:11px;color:var(--gray);}
+
+/* Toast */
+.toast{
+  position:fixed;bottom:24px;right:24px;
+  background:var(--navy);color:var(--white);
+  padding:12px 24px;border-radius:8px;font-size:13px;font-weight:600;
+  box-shadow:0 4px 20px rgba(0,0,0,0.2);
+  transform:translateY(60px);opacity:0;transition:all 0.3s;
+  z-index:999;border-left:4px solid var(--gold);
+}
+.toast.show{transform:translateY(0);opacity:1;}
+
+/* 比賽開始彈窗 */
+.match-found{
+  position:fixed;inset:0;background:rgba(0,0,0,0.7);
+  z-index:300;display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity 0.3s;
+}
+.match-found.show{opacity:1;pointer-events:all;}
+.match-box{
+  background:var(--white);border-radius:16px;
+  padding:40px;text-align:center;max-width:400px;width:90%;
+  transform:scale(0.9);transition:transform 0.3s;
+}
+.match-found.show .match-box{transform:scale(1);}
+.match-vs{
+  font-family:'Oswald',sans-serif;font-size:28px;
+  font-weight:700;color:var(--navy);margin:16px 0;
+}
+.match-vs span{color:var(--red);}
+.btn-go-match{
+  background:var(--red);color:var(--white);
+  padding:14px 40px;border-radius:8px;border:none;
+  font-size:16px;font-weight:700;cursor:pointer;
+  font-family:'Noto Sans TC',sans-serif;
+  transition:all 0.2s;margin-top:20px;width:100%;
+}
+.btn-go-match:hover{background:#a93226;}
+
+@media(max-width:600px){
+  .container{padding:20px 14px;}
+  .match-btn{font-size:15px;padding:16px;}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <a href="baseball-leaguea.html" class="logo">
+    <span style="font-size:20px;">⚾</span>
+    <span class="logo-text">野球小聯盟</span>
+  </a>
+  <div class="user-info">玩家：<span id="headerUser">－</span></div>
+</header>
+
+<div class="container">
+
+  <!-- 我的球隊 -->
+  <div class="my-team-card" id="myTeamCard">
+    <div class="team-badge">⚾</div>
+    <div class="team-detail">
+      <h3 id="myTeamName">載入中...</h3>
+      <p id="myTeamStadium">－</p>
+    </div>
+    <div class="team-stats">
+      <div class="record" id="myRecord">0勝0敗</div>
+      <div class="label">戰績</div>
+    </div>
+  </div>
+
+  <!-- 狀態說明 -->
+  <div class="status-card">
+    <div class="status-icon">⚡</div>
+    <div class="status-text">
+      <h3>即時對戰大廳</h3>
+      <p>點「尋找對手」配對其他玩家，雙方同時看文字轉播比賽！</p>
+    </div>
+  </div>
+
+  <!-- 尋找對手按鈕 -->
+  <button class="match-btn match-btn-find" id="btnFind" onclick="findMatch()">
+    ⚾ 尋找對手
+  </button>
+
+  <!-- 等待動畫 -->
+  <div class="waiting" id="waitingArea">
+    <div class="spinner"></div>
+    <h3>配對中...</h3>
+    <p>正在尋找對手，請稍候</p>
+    <div class="wait-time" id="waitTime">0:00</div>
+    <br>
+    <button class="match-btn match-btn-cancel" style="max-width:200px;margin:16px auto 0;" onclick="cancelMatch()">
+      取消配對
+    </button>
+  </div>
+
+  <!-- 對戰室列表 -->
+  <div class="section-title" style="margin-top:32px;">最近對戰記錄</div>
+  <div class="room-list">
+    <div class="room-head">
+      <span>對戰記錄</span>
+      <span>結果</span>
+    </div>
+    <div id="roomList">
+      <div class="no-rooms">目前還沒有比賽記錄</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- 配對成功彈窗 -->
+<div class="match-found" id="matchFound">
+  <div class="match-box">
+    <div style="font-size:48px;">🎉</div>
+    <div style="font-size:18px;font-weight:700;margin-top:12px;">配對成功！</div>
+    <div class="match-vs">
+      <span id="matchHome">我的球隊</span>
+      <span> VS </span>
+      <span id="matchAway">對手球隊</span>
+    </div>
+    <div style="font-size:13px;color:var(--gray);">比賽即將開始！</div>
+    <button class="btn-go-match" onclick="goToMatch()">進入比賽 →</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════
+//  初始化
+// ══════════════════════════════
+let currentUser = null;
+let currentTeam = null;
+let matchRoom = null;
+let waitTimer = null;
+let waitSeconds = 0;
+let realtimeChannel = null;
+
+window.onload = async function() {
+  // 讀取登入狀態
+  currentUser = JSON.parse(localStorage.getItem('bbUser') || 'null');
+  if (!currentUser) {
+    alert('請先登入！');
+    window.location.href = 'baseball-leaguea.html';
+    return;
+  }
+
+  document.getElementById('headerUser').textContent = currentUser.username;
+
+  // 讀取球隊資料
+  await loadMyTeam();
+
+  // 讀取最近比賽記錄
+  await loadRecentGames();
+};
+
+async function loadMyTeam() {
+  try {
+    const { data: team } = await sb
+      .from('teams')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .single();
+
+    if (!team) {
+      showToast('請先建立球隊！');
+      setTimeout(() => window.location.href = 'build-teama.html', 2000);
+      return;
+    }
+
+    currentTeam = team;
+    localStorage.setItem('bbTeam', JSON.stringify(team));
+
+    document.getElementById('myTeamName').textContent = team.team_name;
+    document.getElementById('myTeamStadium').textContent = '🏟️ ' + (team.stadium_name || '激鬥球場');
+    document.getElementById('myRecord').textContent = `${team.wins}勝${team.losses}敗`;
+
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+async function loadRecentGames() {
+  try {
+    const { data: games } = await sb
+      .from('games')
+      .select('*')
+      .order('played_at', { ascending: false })
+      .limit(5);
+
+    const list = document.getElementById('roomList');
+
+    if (!games || games.length === 0) {
+      list.innerHTML = '<div class="no-rooms">目前還沒有比賽記錄</div>';
+      return;
+    }
+
+    list.innerHTML = games.map(g => `
+      <div class="room-item">
+        <div class="room-teams">比賽 #${g.id.slice(0,6)}</div>
+        <div>${g.score_home} – ${g.score_away}</div>
+        <div class="room-status status-done">已結束</div>
+      </div>
+    `).join('');
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+// ══════════════════════════════
+//  配對系統
+// ══════════════════════════════
+async function findMatch() {
+  if (!currentTeam) { showToast('請先建立球隊！'); return; }
+
+  document.getElementById('btnFind').disabled = true;
+  document.getElementById('waitingArea').classList.add('show');
+
+  // 開始計時
+  waitSeconds = 0;
+  waitTimer = setInterval(() => {
+    waitSeconds++;
+    const m = Math.floor(waitSeconds / 60);
+    const s = waitSeconds % 60;
+    document.getElementById('waitTime').textContent =
+      `${m}:${s.toString().padStart(2, '0')}`;
+  }, 1000);
+
+  try {
+    // 1. 查看是否有等待中的房間
+    const { data: waiting } = await sb
+      .from('match_rooms')
+      .select('*')
+      .eq('status', 'waiting')
+      .neq('home_team_id', currentTeam.id)
+      .limit(1)
+      .single();
+
+    if (waiting) {
+      // 找到等待中的房間，加入！
+      const { data: room } = await sb
+        .from('match_rooms')
+        .update({
+          away_team_id: currentTeam.id,
+          away_team_name: currentTeam.team_name,
+          status: 'ready'
+        })
+        .eq('id', waiting.id)
+        .select()
+        .single();
+
+      matchRoom = room;
+      onMatchFound(room);
+
+    } else {
+      // 沒有等待的房間，自己建一個
+      const { data: room } = await sb
+        .from('match_rooms')
+        .insert({
+          home_team_id: currentTeam.id,
+          home_team_name: currentTeam.team_name,
+          status: 'waiting',
+          score_home: 0,
+          score_away: 0
+        })
+        .select()
+        .single();
+
+      matchRoom = room;
+
+      // 訂閱這個房間的變化
+      subscribeToRoom(room.id);
+      showToast('等待對手中...');
+    }
+  } catch(e) {
+    showToast('配對失敗，請稍後再試');
+    cancelMatch();
+  }
+}
+
+function subscribeToRoom(roomId) {
+  realtimeChannel = sb
+    .channel(`room-${roomId}`)
+    .on('postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'match_rooms', filter: `id=eq.${roomId}` },
+      (payload) => {
+        const room = payload.new;
+        if (room.status === 'ready') {
+          matchRoom = room;
+          onMatchFound(room);
+        }
+      }
+    )
+    .subscribe();
+}
+
+function onMatchFound(room) {
+  clearInterval(waitTimer);
+  document.getElementById('waitingArea').classList.remove('show');
+
+  // 顯示配對成功彈窗
+  document.getElementById('matchHome').textContent = room.home_team_name || '主場';
+  document.getElementById('matchAway').textContent = room.away_team_name || '客場';
+  document.getElementById('matchFound').classList.add('show');
+
+  // 儲存房間資訊
+  localStorage.setItem('bbMatchRoom', JSON.stringify(room));
+}
+
+function goToMatch() {
+  window.location.href = 'game-sima.html';
+}
+
+async function cancelMatch() {
+  clearInterval(waitTimer);
+  document.getElementById('waitingArea').classList.remove('show');
+  document.getElementById('btnFind').disabled = false;
+
+  if (realtimeChannel) {
+    sb.removeChannel(realtimeChannel);
+    realtimeChannel = null;
+  }
+
+  // 刪除等待中的房間
+  if (matchRoom && matchRoom.status === 'waiting') {
+    await sb.from('match_rooms').delete().eq('id', matchRoom.id);
+    matchRoom = null;
+  }
+
+  showToast('已取消配對');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>
