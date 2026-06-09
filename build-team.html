@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>建立球隊 – 野球小聯盟</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Oswald:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:   #0a1628;
+    --blue:   #1a3a6b;
+    --red:    #c0392b;
+    --gold:   #e8a020;
+    --green:  #27ae60;
+    --light:  #f5f7fa;
+    --gray:   #8a9bb0;
+    --border: #dde3ec;
+    --white:  #ffffff;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--white);
+    font-family: 'Noto Sans TC', sans-serif;
+    color: var(--navy);
+  }
+
+  /* ── Header ── */
+  header {
+    background: var(--navy);
+    color: var(--white);
+    padding: 0 32px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 3px solid var(--gold);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--white);
+  }
+
+  .logo-icon { font-size: 22px; }
+
+  .logo-text {
+    font-family: 'Oswald', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+
+  .header-step {
+    font-size: 12px;
+    color: rgba(255,255,255,0.6);
+    letter-spacing: 2px;
+  }
+
+  /* ── 步驟列 ── */
+  .steps-bar {
+    background: var(--light);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+
+  .step {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--gray);
+  }
+
+  .step-num {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--border);
+    color: var(--gray);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .step.active .step-num {
+    background: var(--red);
+    color: var(--white);
+  }
+
+  .step.active {
+    color: var(--navy);
+    font-weight: 700;
+  }
+
+  .step.done .step-num {
+    background: var(--green);
+    color: var(--white);
+  }
+
+  .step-line {
+    flex: 1;
+    height: 2px;
+    background: var(--border);
+    margin: 0 12px;
+    max-width: 60px;
+  }
+
+  /* ── 主容器 ── */
+  .container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 32px 24px 80px;
+  }
+
+  /* ── 規則卡片 ── */
+  .rules-card {
+    background: var(--light);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--gold);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 28px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 28px;
+    align-items: center;
+  }
+
+  .rule-item {
+    font-size: 12px;
+    color: var(--gray);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .rule-item strong {
+    color: var(--navy);
+    font-weight: 700;
+  }
+
+  /* ── 總分儀表板 ── */
+  .score-dashboard {
+    position: sticky;
+    top: 63px;
+    z-index: 90;
+    background: var(--white);
+    border-bottom: 2px solid var(--border);
+    padding: 12px 0;
+    margin-bottom: 28px;
+  }
+
+  .score-inner {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .score-main {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+
+  .score-label {
+    font-size: 12px;
+    color: var(--gray);
+    font-weight: 600;
+  }
+
+  .score-value {
+    font-family: 'Oswald', sans-serif;
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--navy);
+    line-height: 1;
+    transition: color 0.2s;
+  }
+
+  .score-value.over  { color: var(--red); }
+  .score-value.exact { color: var(--green); }
+
+  .score-slash {
+    font-size: 20px;
+    color: var(--border);
+  }
+
+  .score-max {
+    font-family: 'Oswald', sans-serif;
+    font-size: 20px;
+    color: var(--gray);
+  }
+
+  .score-remain {
+    font-size: 13px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    background: var(--light);
+    border: 1px solid var(--border);
+    color: var(--gray);
+    font-weight: 600;
+  }
+
+  .score-remain.over  { background:#fdecea; border-color:#f5b7b1; color:var(--red); }
+  .score-remain.exact { background:#eafaf1; border-color:#a9dfbf; color:var(--green); }
+
+  /* 極值計數器 */
+  .limit-counters {
+    display: flex;
+    gap: 12px;
+    margin-left: auto;
+  }
+
+  .limit-badge {
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--white);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-weight: 600;
+    color: var(--navy);
+  }
+
+  .limit-badge .cnt { color: var(--blue); }
+  .limit-badge.warn .cnt { color: var(--red); }
+
+  /* ── 區塊標題 ── */
+  .section-title {
+    font-family: 'Oswald', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--navy);
+    border-left: 4px solid var(--red);
+    padding-left: 12px;
+    margin-bottom: 14px;
+    margin-top: 28px;
+  }
+
+  .section-title:first-child { margin-top: 0; }
+
+  /* ── 球員表格 ── */
+  .player-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 8px;
+    font-size: 13px;
+  }
+
+  .player-table thead th {
+    background: var(--navy);
+    color: var(--white);
+    padding: 9px 10px;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+
+  .player-table thead th:first-child { text-align: left; padding-left: 14px; }
+
+  .player-table tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+
+  .player-table tbody tr:hover { background: var(--light); }
+
+  .player-table tbody td {
+    padding: 8px 10px;
+    text-align: center;
+    vertical-align: middle;
+  }
+
+  .player-table tbody td:first-child {
+    text-align: left;
+    padding-left: 14px;
+  }
+
+  /* 序號 */
+  .row-num {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--navy);
+    color: var(--white);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    margin-right: 8px;
+    flex-shrink: 0;
+  }
+
+  .row-num.pitcher { background: var(--red); }
+
+  /* 守備位置 */
+  .pos-select, .hand-select, .special-select {
+    border: 1.5px solid var(--border);
+    border-radius: 5px;
+    padding: 5px 6px;
+    font-size: 12px;
+    font-family: 'Noto Sans TC', sans-serif;
+    color: var(--navy);
+    background: var(--white);
+    cursor: pointer;
+  }
+
+  .pos-select:focus, .hand-select:focus, .special-select:focus {
+    outline: none;
+    border-color: var(--blue);
+  }
+
+  /* 選手名 */
+  .name-input {
+    border: 1.5px solid var(--border);
+    border-radius: 5px;
+    padding: 5px 8px;
+    font-size: 13px;
+    font-family: 'Noto Sans TC', sans-serif;
+    color: var(--navy);
+    width: 100%;
+    max-width: 120px;
+  }
+
+  .name-input:focus {
+    outline: none;
+    border-color: var(--blue);
+  }
+
+  /* 能力值輸入 */
+  .stat-input {
+    width: 44px;
+    border: 1.5px solid var(--border);
+    border-radius: 5px;
+    padding: 5px 4px;
+    text-align: center;
+    font-size: 13px;
+    font-family: 'Oswald', sans-serif;
+    font-weight: 600;
+    color: var(--navy);
+    background: var(--white);
+  }
+
+  .stat-input:focus {
+    outline: none;
+    border-color: var(--blue);
+  }
+
+  .stat-input.val-high { border-color: var(--gold); color: var(--gold); }
+  .stat-input.val-max  { border-color: var(--red);  color: var(--red);  }
+  .stat-input.val-low  { border-color: var(--gray); color: var(--gray); background: var(--light); }
+
+  /* 小計 */
+  .subtotal {
+    font-family: 'Oswald', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--navy);
+    min-width: 32px;
+    display: inline-block;
+    text-align: center;
+  }
+
+  .subtotal.low  { color: var(--red); }
+  .subtotal.high { color: var(--green); }
+
+  /* ── 球隊基本資料 ── */
+  .team-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .form-group label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--gray);
+    letter-spacing: 0.5px;
+  }
+
+  .form-group input, .form-group select {
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    padding: 9px 12px;
+    font-size: 13px;
+    font-family: 'Noto Sans TC', sans-serif;
+    color: var(--navy);
+    background: var(--white);
+  }
+
+  .form-group input:focus, .form-group select:focus {
+    outline: none;
+    border-color: var(--blue);
+  }
+
+  /* ── 送出按鈕區 ── */
+  .submit-area {
+    margin-top: 36px;
+    padding: 24px;
+    background: var(--light);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .submit-info {
+    font-size: 13px;
+    color: var(--gray);
+    line-height: 1.7;
+  }
+
+  .submit-info strong { color: var(--navy); }
+
+  .btn {
+    padding: 12px 32px;
+    border-radius: 7px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    font-family: 'Noto Sans TC', sans-serif;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+  }
+
+  .btn-submit {
+    background: var(--navy);
+    color: var(--white);
+  }
+
+  .btn-submit:hover:not(:disabled) {
+    background: var(--blue);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(10,22,40,0.2);
+  }
+
+  .btn-submit:disabled {
+    background: var(--border);
+    color: var(--gray);
+    cursor: not-allowed;
+  }
+
+  .btn-reset {
+    background: transparent;
+    border: 1.5px solid var(--border);
+    color: var(--gray);
+    padding: 12px 20px;
+  }
+
+  .btn-reset:hover {
+    border-color: var(--navy);
+    color: var(--navy);
+  }
+
+  /* ── 錯誤訊息 ── */
+  .error-list {
+    background: #fdecea;
+    border: 1px solid #f5b7b1;
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin-top: 16px;
+    display: none;
+  }
+
+  .error-list.show { display: block; }
+
+  .error-list ul {
+    list-style: none;
+    margin: 0;
+  }
+
+  .error-list ul li {
+    font-size: 12px;
+    color: var(--red);
+    padding: 2px 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .error-list ul li::before { content: '✕'; font-weight: 700; }
+
+  /* ── 成功訊息 ── */
+  .success-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 300;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+
+  .success-modal.show {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .success-box {
+    background: var(--white);
+    border-radius: 16px;
+    padding: 48px 40px;
+    text-align: center;
+    max-width: 360px;
+    width: 90%;
+    transform: scale(0.9);
+    transition: transform 0.3s;
+  }
+
+  .success-modal.show .success-box { transform: scale(1); }
+
+  .success-icon { font-size: 56px; margin-bottom: 16px; }
+
+  .success-title {
+    font-family: 'Oswald', sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 8px;
+  }
+
+  .success-sub {
+    font-size: 13px;
+    color: var(--gray);
+    line-height: 1.7;
+    margin-bottom: 28px;
+  }
+
+  .btn-go {
+    background: var(--red);
+    color: var(--white);
+    padding: 12px 32px;
+    border-radius: 8px;
+    border: none;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Noto Sans TC', sans-serif;
+    transition: all 0.2s;
+  }
+
+  .btn-go:hover {
+    background: #a93226;
+    transform: translateY(-2px);
+  }
+
+  /* ── 響應式 ── */
+  @media (max-width: 700px) {
+    header { padding: 0 16px; }
+    .container { padding: 20px 12px 80px; }
+    .team-info-grid { grid-template-columns: 1fr; }
+    .player-table { font-size: 11px; }
+    .stat-input { width: 36px; font-size: 12px; }
+    .name-input { max-width: 80px; }
+    .limit-counters { display: none; }
+    .steps-bar { padding: 12px 16px; }
+    .score-inner { padding: 0 16px; }
+  }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const SUPABASE_URL = 'https://egogdgiketzguhgqkhzi.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_bSDDNDzQbtRECc12rq4H1A_TEY_f2Ti';
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+</script>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <a href="baseball-league.html" class="logo">
+    <span class="logo-icon">⚾</span>
+    <span class="logo-text">野球小聯盟</span>
+  </a>
+  <div class="header-step">建立球隊</div>
+</header>
+
+<!-- 步驟列 -->
+<div class="steps-bar">
+  <div class="step done">
+    <div class="step-num">✓</div>
+    <span>註冊帳號</span>
+  </div>
+  <div class="step-line"></div>
+  <div class="step active">
+    <div class="step-num">2</div>
+    <span>建立球隊</span>
+  </div>
+
+</div>
+
+<!-- 總分儀表板（固定） -->
+<div class="score-dashboard">
+  <div class="score-inner">
+    <div class="score-main">
+      <span class="score-label">全隊總分</span>
+      <span class="score-value" id="totalScore">220</span>
+      <span class="score-slash">/</span>
+      <span class="score-max">240</span>
+    </div>
+    <div class="score-remain" id="scoreRemain">還剩 20 分</div>
+    <div class="limit-counters">
+      <div class="limit-badge" id="badge10">
+        <span>數值10</span>
+        <span class="cnt" id="cnt10">0</span><span>/1</span>
+      </div>
+      <div class="limit-badge" id="badge9">
+        <span>數值9</span>
+        <span class="cnt" id="cnt9">0</span><span>/2</span>
+      </div>
+      <div class="limit-badge" id="badge8">
+        <span>數值8</span>
+        <span class="cnt" id="cnt8">0</span><span>/2</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 主容器 -->
+<div class="container">
+
+  <!-- 規則提示 -->
+  <div class="rules-card">
+    <div class="rule-item">⚾ <strong>野手 9位</strong> + 投手 <strong>2位</strong></div>
+    <div class="rule-item">📊 每人 <strong>4項</strong> 能力，初始各 <strong>5</strong></div>
+    <div class="rule-item">📏 單人小計 <strong>10 ~ 28</strong></div>
+    <div class="rule-item">🔴 數值10 → 全隊最多 <strong>1個</strong></div>
+    <div class="rule-item">🟠 數值9 → 全隊最多 <strong>2個</strong></div>
+    <div class="rule-item">🟡 數值8 → 全隊最多 <strong>2個</strong></div>
+    <div class="rule-item">🎯 全隊總分必須剛好 <strong>240分</strong></div>
+  </div>
+
+  <!-- 球隊基本資料 -->
+  <div class="section-title">球隊基本資料</div>
+  <div class="team-info-grid">
+    <div class="form-group">
+      <label>球隊名稱</label>
+      <input type="text" id="teamName" placeholder="最多9個字" maxlength="9">
+    </div>
+    <div class="form-group">
+      <label>主場球場名稱</label>
+      <input type="text" id="stadiumName" placeholder="例：激鬥球場" maxlength="12" value="激鬥球場">
+    </div>
+    <div class="form-group">
+      <label>中堅距離（115 ~ 130m）</label>
+      <input type="number" id="centerDist" min="115" max="130" value="122">
+    </div>
+    <div class="form-group">
+      <label>翼邊距離（85 ~ 105m）</label>
+      <input type="number" id="wingDist" min="85" max="105" value="100">
+    </div>
+  </div>
+
+  <!-- 野手表格 -->
+  <div class="section-title">野手陣容（9位）</div>
+  <div style="overflow-x:auto;">
+    <table class="player-table" id="fielderTable">
+      <thead>
+        <tr>
+          <th style="text-align:left;padding-left:14px;">守位 / 選手名</th>
+          <th>打席</th>
+          <th>出場</th>
+          <th>打力</th>
+          <th>走力</th>
+          <th>守備</th>
+          <th>小計</th>
+          <th>特殊能力</th>
+        </tr>
+      </thead>
+      <tbody id="fielderBody">
+        <!-- JS生成 -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 投手表格 -->
+  <div class="section-title">投手陣容（2位）</div>
+  <div style="overflow-x:auto;">
+    <table class="player-table" id="pitcherTable">
+      <thead>
+        <tr>
+          <th style="text-align:left;padding-left:14px;">選手名</th>
+          <th>投球手</th>
+          <th>球速</th>
+          <th>控球</th>
+          <th>體力</th>
+          <th>變化</th>
+          <th>小計</th>
+          <th>特殊能力</th>
+        </tr>
+      </thead>
+      <tbody id="pitcherBody">
+        <!-- JS生成 -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 錯誤訊息 -->
+  <div class="error-list" id="errorList">
+    <ul id="errorItems"></ul>
+  </div>
+
+  <!-- 送出區 -->
+  <div class="submit-area">
+    <div class="submit-info">
+      <strong>確認後送出</strong><br>
+      全隊總分必須剛好 240 分才能存檔。<br>
+      存檔完成後即可前往首頁參加比賽。
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-reset" onclick="resetAll()">重置全部</button>
+      <button class="btn btn-submit" id="submitBtn" onclick="submitTeam()">💾 存檔 →</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- 成功模態 -->
+<div class="success-modal" id="successModal">
+  <div class="success-box">
+    <div class="success-icon">🏟️</div>
+    <div class="success-title">存檔成功！</div>
+    <div class="success-sub" id="successText">
+      你的球隊已成功建立。<br>
+      存檔成功！前往首頁即可參加比賽！
+    </div>
+    <button class="btn-go" onclick="goHome()">前往首頁 →</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════
+//  資料定義
+// ══════════════════════════════
+const POSITIONS  = ['捕手','一壘','二壘','三壘','游擊','左外','中外','右外'];
+const HAND_BAT   = ['右打','左打','切換'];
+const HAND_PIT   = ['右投','左投'];
+const SPECIALS_F = ['-','平均型打者','強打型打者','腳程好','犧打好手','選球強','關鍵打','鐵人型','爆發型','防守型','反擊型','守備強化'];
+const SPECIALS_P = ['-','穩定型','三振王','牛棚王','完投型','變化球師','強壓型'];
+
+const TOTAL_MAX  = 240;
+const SUB_MIN    = 10;
+const SUB_MAX    = 28;
+const LIMIT_10   = 1;
+const LIMIT_9    = 2;
+const LIMIT_8    = 2;
+
+// 預設選手名（野手）
+const DEFAULT_FIELDER_NAMES = ['花子','菊吉','梅子','伊藤','竹子','上田','小富','鈴実','山田'];
+// 預設選手名（投手）
+const DEFAULT_PITCHER_NAMES = ['大谷','佐藤'];
+
+// ══════════════════════════════
+//  初始化表格
+// ══════════════════════════════
+function initTables() {
+  const fb = document.getElementById('fielderBody');
+  fb.innerHTML = '';
+  for (let i = 0; i < 9; i++) {
+    fb.innerHTML += buildFielderRow(i);
+  }
+
+  const pb = document.getElementById('pitcherBody');
+  pb.innerHTML = '';
+  for (let i = 0; i < 2; i++) {
+    pb.innerHTML += buildPitcherRow(i);
+  }
+
+  updateAll();
+}
+
+function buildFielderRow(i) {
+  const posOpts = POSITIONS.map((p, idx) =>
+    `<option value="${idx}"${idx===i%8?' selected':''}>${p}</option>`).join('');
+  const handOpts = HAND_BAT.map((h, idx) =>
+    `<option value="${idx}">${h}</option>`).join('');
+  const specOpts = SPECIALS_F.map((s, idx) =>
+    `<option value="${idx}">${s}</option>`).join('');
+
+  return `
+  <tr id="frow${i}">
+    <td>
+      <span class="row-num">${i+1}</span>
+      <select class="pos-select" id="fpos${i}">${posOpts}</select>
+      <input class="name-input" type="text" id="fname${i}"
+             value="${DEFAULT_FIELDER_NAMES[i]}" maxlength="6"
+             style="margin-left:6px;">
+    </td>
+    <td><select class="hand-select" id="fhand${i}">${handOpts}</select></td>
+    <td><input class="stat-input" type="number" id="f${i}_0" value="5" min="1" max="10" oninput="updateAll()"></td>
+    <td><input class="stat-input" type="number" id="f${i}_1" value="5" min="1" max="10" oninput="updateAll()"></td>
+    <td><input class="stat-input" type="number" id="f${i}_2" value="5" min="1" max="10" oninput="updateAll()"></td>
+    <td><input class="stat-input" type="number" id="f${i}_3" value="5" min="1" max="10" oninput="updateAll()"></td>
+    <td><span class="subtotal" id="fsub${i}">20</span></td>
+    <td><select class="special-select" id="fspec${i}">${specOpts}</select></td>
+  </tr>`;
+}
+
+function buildPitcherRow(i) {
+  const handOpts = HAND_PIT.map((h, idx) =>
+    `<option value="${idx}">${h}</option>`).join('');
+  const specOpts = SPECIALS_P.map((s, idx) =>
+    `<option value="${idx}">${s}</option>`).join('');
+
+  return `
+  <tr id="prow${i}">
+    <td>
+      <span class="row-num pitcher">${i+1}</span>
+      <input class="name-input" type="text" id="pname${i}"
+             value="${DEFAULT_PITCHER_NAMES[i]}" maxlength="6">
+    </td>
+    <td><select class="hand-select" id="phand${i}">${handOpts}</select></td>
+    <td><input class="stat-input" type="number" id="p${i}_0" value="5" min="1" max="10" oninput="updateAll()"></td>
+    <td><input class="stat-input" type="number" id="p${i}_1" value="5" min="1" max="10" oninput="updateAll()"></td>
+    <td><input class="stat-input" type="number" id="p${i}_2" value="5" min="1" max="10" oninput="updateAll()"></td>
+    <td><input class="stat-input" type="number" id="p${i}_3" value="5" min="1" max="10" oninput="updateAll()"></td>
+    <td><span class="subtotal" id="psub${i}">20</span></td>
+    <td><select class="special-select" id="pspec${i}">${specOpts}</select></td>
+  </tr>`;
+}
+
+// ══════════════════════════════
+//  即時更新計算
+// ══════════════════════════════
+function getVal(id) {
+  const el = document.getElementById(id);
+  return el ? (parseInt(el.value) || 0) : 0;
+}
+
+function updateAll() {
+  let total = 0;
+  let cnt10 = 0, cnt9 = 0, cnt8 = 0;
+
+  // 野手
+  for (let i = 0; i < 9; i++) {
+    let sub = 0;
+    for (let j = 0; j < 4; j++) {
+      const v = getVal(`f${i}_${j}`);
+      sub += v;
+      const inp = document.getElementById(`f${i}_${j}`);
+      inp.classList.remove('val-max','val-high','val-low');
+      if (v === 10) { inp.classList.add('val-max'); cnt10++; }
+      else if (v === 9) { inp.classList.add('val-high'); cnt9++; }
+      else if (v === 8) { inp.classList.add('val-high'); cnt8++; }
+      else if (v <= 3) inp.classList.add('val-low');
+    }
+    total += sub;
+    const subEl = document.getElementById(`fsub${i}`);
+    subEl.textContent = sub;
+    subEl.className = 'subtotal' +
+      (sub < SUB_MIN ? ' low' : sub >= 22 ? ' high' : '');
+  }
+
+  // 投手
+  for (let i = 0; i < 2; i++) {
+    let sub = 0;
+    for (let j = 0; j < 4; j++) {
+      const v = getVal(`p${i}_${j}`);
+      sub += v;
+      const inp = document.getElementById(`p${i}_${j}`);
+      inp.classList.remove('val-max','val-high','val-low');
+      if (v === 10) { inp.classList.add('val-max'); cnt10++; }
+      else if (v === 9) { inp.classList.add('val-high'); cnt9++; }
+      else if (v === 8) { inp.classList.add('val-high'); cnt8++; }
+      else if (v <= 3) inp.classList.add('val-low');
+    }
+    total += sub;
+    const subEl = document.getElementById(`psub${i}`);
+    subEl.textContent = sub;
+    subEl.className = 'subtotal' +
+      (sub < SUB_MIN ? ' low' : sub >= 22 ? ' high' : '');
+  }
+
+  // 更新總分顯示
+  const scoreEl = document.getElementById('totalScore');
+  const remainEl = document.getElementById('scoreRemain');
+  scoreEl.textContent = total;
+  scoreEl.className = 'score-value' +
+    (total > TOTAL_MAX ? ' over' : total === TOTAL_MAX ? ' exact' : '');
+
+  const diff = TOTAL_MAX - total;
+  if (diff > 0) {
+    remainEl.textContent = `還剩 ${diff} 分`;
+    remainEl.className = 'score-remain';
+  } else if (diff === 0) {
+    remainEl.textContent = '✅ 總分正確！';
+    remainEl.className = 'score-remain exact';
+  } else {
+    remainEl.textContent = `超過 ${-diff} 分！`;
+    remainEl.className = 'score-remain over';
+  }
+
+  // 極值計數
+  updateBadge('badge10','cnt10', cnt10, LIMIT_10);
+  updateBadge('badge9', 'cnt9',  cnt9,  LIMIT_9);
+  updateBadge('badge8', 'cnt8',  cnt8,  LIMIT_8);
+
+  // 按鈕狀態
+  const canSubmit = (total === TOTAL_MAX) &&
+                    (cnt10 <= LIMIT_10) &&
+                    (cnt9  <= LIMIT_9)  &&
+                    (cnt8  <= LIMIT_8);
+  document.getElementById('submitBtn').disabled = !canSubmit;
+}
+
+function updateBadge(badgeId, cntId, val, max) {
+  document.getElementById(cntId).textContent = val;
+  const badge = document.getElementById(badgeId);
+  badge.classList.toggle('warn', val > max);
+}
+
+// ══════════════════════════════
+//  送出驗證
+// ══════════════════════════════
+async function submitTeam() {
+  const errors = [];
+
+  // 球隊名
+  const teamName = document.getElementById('teamName').value.trim();
+  if (!teamName) errors.push('請填寫球隊名稱');
+
+  // 球場名
+  const stadiumName = document.getElementById('stadiumName').value.trim();
+  if (!stadiumName) errors.push('請填寫主場球場名稱');
+
+  // 中堅距離
+  const center = parseInt(document.getElementById('centerDist').value);
+  if (center < 115 || center > 130) errors.push('中堅距離需在 115 ~ 130m 之間');
+
+  // 翼邊距離
+  const wing = parseInt(document.getElementById('wingDist').value);
+  if (wing < 85 || wing > 105) errors.push('翼邊距離需在 85 ~ 105m 之間');
+
+  // 差距
+  if (center - wing < 20 || center - wing > 30)
+    errors.push('中堅與翼邊差距需在 20 ~ 30m 之間');
+
+  // 選手名
+  for (let i = 0; i < 9; i++) {
+    const n = document.getElementById(`fname${i}`).value.trim();
+    if (!n) errors.push(`野手第 ${i+1} 位請填寫選手名稱`);
+  }
+  for (let i = 0; i < 2; i++) {
+    const n = document.getElementById(`pname${i}`).value.trim();
+    if (!n) errors.push(`投手第 ${i+1} 位請填寫選手名稱`);
+  }
+
+  // 能力值範圍
+  let total = 0;
+  let cnt10 = 0, cnt9 = 0, cnt8 = 0;
+  for (let i = 0; i < 9; i++) {
+    let sub = 0;
+    for (let j = 0; j < 4; j++) {
+      const v = getVal(`f${i}_${j}`);
+      if (v < 1 || v > 10) errors.push(`野手${i+1} 能力值需在 1~10 之間`);
+      if (v === 10) cnt10++;
+      if (v === 9)  cnt9++;
+      if (v === 8)  cnt8++;
+      sub += v;
+    }
+    total += sub;
+    if (sub < SUB_MIN || sub > SUB_MAX)
+      errors.push(`野手第 ${i+1} 位小計需在 ${SUB_MIN}~${SUB_MAX} 之間（目前：${sub}）`);
+  }
+  for (let i = 0; i < 2; i++) {
+    let sub = 0;
+    for (let j = 0; j < 4; j++) {
+      const v = getVal(`p${i}_${j}`);
+      if (v < 1 || v > 10) errors.push(`投手${i+1} 能力值需在 1~10 之間`);
+      if (v === 10) cnt10++;
+      if (v === 9)  cnt9++;
+      if (v === 8)  cnt8++;
+      sub += v;
+    }
+    total += sub;
+    if (sub < SUB_MIN || sub > SUB_MAX)
+      errors.push(`投手第 ${i+1} 位小計需在 ${SUB_MIN}~${SUB_MAX} 之間（目前：${sub}）`);
+  }
+
+  if (total !== TOTAL_MAX) errors.push(`全隊總分需剛好 ${TOTAL_MAX} 分（目前：${total}）`);
+  if (cnt10 > LIMIT_10) errors.push(`數值10 最多 ${LIMIT_10} 個（目前：${cnt10}）`);
+  if (cnt9  > LIMIT_9)  errors.push(`數值9 最多 ${LIMIT_9} 個（目前：${cnt9}）`);
+  if (cnt8  > LIMIT_8)  errors.push(`數值8 最多 ${LIMIT_8} 個（目前：${cnt8}）`);
+
+  // 顯示錯誤
+  const errList = document.getElementById('errorList');
+  const errItems = document.getElementById('errorItems');
+  if (errors.length > 0) {
+    errItems.innerHTML = errors.map(e => `<li>${e}</li>`).join('');
+    errList.classList.add('show');
+    errList.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    return;
+  }
+
+  errList.classList.remove('show');
+
+  // 讀取用戶資料
+  const currentUser = JSON.parse(localStorage.getItem('bbUser') || 'null');
+  if (!currentUser) { showToast('請先登入！'); return; }
+
+  const teamData = {
+    teamName, stadiumName, center, wing,
+    fielders: Array.from({length:9}, (_,i) => ({
+      pos:  document.getElementById(`fpos${i}`).value,
+      name: document.getElementById(`fname${i}`).value.trim(),
+      hand: document.getElementById(`fhand${i}`).value,
+      stats: [getVal(`f${i}_0`), getVal(`f${i}_1`), getVal(`f${i}_2`), getVal(`f${i}_3`)],
+      special: document.getElementById(`fspec${i}`).value
+    })),
+    pitchers: Array.from({length:2}, (_,i) => ({
+      name: document.getElementById(`pname${i}`).value.trim(),
+      hand: document.getElementById(`phand${i}`).value,
+      stats: [getVal(`p${i}_0`), getVal(`p${i}_1`), getVal(`p${i}_2`), getVal(`p${i}_3`)],
+      special: document.getElementById(`pspec${i}`).value
+    })),
+    wins: 0, losses: 0
+  };
+
+  try {
+    // 存球隊到Supabase
+    const { data: team, error: teamError } = await sb
+      .from('teams')
+      .insert({
+        user_id: currentUser.id,
+        team_name: teamName,
+        stadium_name: stadiumName,
+        center_dist: center,
+        wing_dist: wing
+      })
+      .select()
+      .single();
+
+    if (teamError) { alert('建隊失敗：' + teamError.message); return; }
+
+    // 存球員到Supabase
+    const allPlayers = [
+      ...teamData.fielders.map((f,i) => ({
+        team_id: team.id,
+        name: f.name,
+        position: f.pos,
+        hand: parseInt(f.hand),
+        stat1: f.stats[0], stat2: f.stats[1],
+        stat3: f.stats[2], stat4: f.stats[3],
+        special: f.special,
+        is_pitcher: false
+      })),
+      ...teamData.pitchers.map((p,i) => ({
+        team_id: team.id,
+        name: p.name,
+        position: '投手',
+        hand: parseInt(p.hand),
+        stat1: p.stats[0], stat2: p.stats[1],
+        stat3: p.stats[2], stat4: p.stats[3],
+        special: p.special,
+        is_pitcher: true
+      }))
+    ];
+
+    await sb.from('players').insert(allPlayers);
+
+    // 同時存localStorage備用
+    const saveData = { ...teamData, teamName, id: team.id };
+    localStorage.setItem('bbTeam', JSON.stringify(saveData));
+
+    // 顯示成功
+    document.getElementById('successText').innerHTML =
+      `<strong>${teamName}</strong> 已成功建立！<br>主場：${stadiumName}<br>存檔成功！前往首頁參加比賽！`;
+    document.getElementById('successModal').classList.add('show');
+
+  } catch(e) {
+    alert('建隊失敗，請稍後再試：' + e.message);
+  }
+}
+
+// ══════════════════════════════
+//  重置
+// ══════════════════════════════
+function resetAll() {
+  if (!confirm('確定要重置所有能力值嗎？')) return;
+  for (let i = 0; i < 9; i++) {
+    for (let j = 0; j < 4; j++) {
+      document.getElementById(`f${i}_${j}`).value = 5;
+    }
+  }
+  for (let i = 0; i < 2; i++) {
+    for (let j = 0; j < 4; j++) {
+      document.getElementById(`p${i}_${j}`).value = 5;
+    }
+  }
+  updateAll();
+}
+
+function goHome() {
+  window.location.href = 'baseball-league.html';
+}
+
+// 啟動
+initTables();
+</script>
+</body>
+</html>
